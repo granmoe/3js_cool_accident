@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<script src="lib/three.js/build/three.js"></script>
+<script src="lib/require.js/require.js"></script>
+<script src="lib/three.js/examples/js/Detector.js"></script>
+<script src="lib/threex.windowresize.js"></script>
+<body style='margin: 0px; background-color: #bbbbbb; overflow: hidden;'><script>
+require([], function(){
+	if( !Detector.webgl ){
+		Detector.addGetWebGLMessage();
+		throw 'WebGL Not Available'
+	} 
+	
+	var renderer	= new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+	
+	var scene	= new THREE.Scene();
+	var camera	= new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 1000);
+	camera.position.z = 10;
+
+	// declare the rendering loop
+	var onRenderFcts= [];
+
+	// handle window resize events
+	var winResize	= new THREEx.WindowResize(renderer, camera)
+
+	function getRandomInt(min, max) {
+	    return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	var numRings = getRandomInt(20,40);
+	for (var i = 1; i < numRings; i++) {
+		var innerRadius = getRandomInt(1,1000);
+		var outerRadius = getRandomInt(1,1000);
+		var thetaSegments = getRandomInt(3,100);
+		var phiSegments = getRandomInt(3,100);
+		var thetaStart = getRandomInt(0,120);
+		var thetaLength = Math.PI * getRandomInt(1,10);
+
+		var geometry = new THREE.RingGeometry(
+			innerRadius, outerRadius, thetaSegments, phiSegments, thetaStart, thetaLength
+		);
+		var ring = new THREE.Mesh(
+			geometry, new THREE.MeshBasicMaterial({color: Math.random() * 0xff0000})
+		);
+		
+		var x = getRandomInt(-500, 500);
+		var y = getRandomInt(-500, 500);
+		var z = getRandomInt(0, -500);
+
+		ring.position.set(x, y, 0);
+		scene.add(ring);
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Camera Controls							//
+	//////////////////////////////////////////////////////////////////////////////////
+	var mouse	= {x : 0, y : 0}
+	document.addEventListener('mousemove', function(event){
+		mouse.x	= (event.clientX / window.innerWidth ) - 0.5
+		mouse.y	= (event.clientY / window.innerHeight) - 0.5
+	}, false)
+	onRenderFcts.push(function(delta, now){
+		camera.position.x += (mouse.x*5 - camera.position.x) * (delta*3)
+		camera.position.y += (mouse.y*5 - camera.position.y) * (delta*3)
+		camera.lookAt( scene.position )
+	})
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		render the scene						//
+	//////////////////////////////////////////////////////////////////////////////////
+	onRenderFcts.push(function(){
+		renderer.render( scene, camera );		
+	})
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Rendering Loop runner						//
+	//////////////////////////////////////////////////////////////////////////////////
+	var lastTimeMsec= null
+	requestAnimationFrame(function animate(nowMsec){
+		// keep looping
+		requestAnimationFrame( animate );
+		// measure time
+		lastTimeMsec	= lastTimeMsec || nowMsec-1000/60
+		var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec)
+		lastTimeMsec	= nowMsec
+		// call each update function
+		onRenderFcts.forEach(function(onRenderFct){
+			onRenderFct(deltaMsec/1000, nowMsec/1000)
+		})
+	})
+})
+</script></body>
